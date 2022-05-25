@@ -1,0 +1,15 @@
+#!/bin/bash -e
+
+[[ -z "$DEBUG" ]] || set -x
+
+JOOMLA_USR=${JOOMLA_USR:-www-data}
+JOOMLA_CACHE=${JOOMLA_CACHE:-/var/www/.joomlatools}
+
+if [[ ! -d "$JOOMLA_CACHE" ]]; then
+    mkdir -p $JOOMLA_CACHE
+fi
+chown -R $JOOMLA_USR:$JOOMLA_USR $JOOMLA_CACHE
+
+COMMAND="joomla $@"
+
+runuser $JOOMLA_USR -s /bin/bash -c "$COMMAND"

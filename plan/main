@@ -1,0 +1,10 @@
+#include <turnkey/base>
+#include <turnkey/lamp>
+
+php-gd
+php-xml
+php-mbstring
+php-curl
+php-ldap
+php-zip
+build-essential # for n

@@ -1,0 +1,66 @@
+#!/bin/bash -ex
+
+ADMIN_NAME=admin
+ADMIN_PASS=turnkey
+ADMIN_MAIL=admin@example.com
+
+DB_PREFIX=j_
+DB_NAME=sites_joomla
+DB_USER=joomla
+DB_PASS=$(mcookie)
+
+SRC=/usr/local/src
+WEBROOT=/var/www/joomla
+USER=www-data
+COMPOSER_DIR=/usr/local/lib/composer
+COMPOSER_BIN=$COMPOSER_DIR/vendor/bin
+CONF=$WEBROOT/configuration.php
+
+mkdir -p $WEBROOT $COMPOSER_DIR
+chown -R $USER:$USER $WEBROOT $COMPOSER_DIR
+
+# Install joomlatools (joomla cli tool) globally and include in /usr/local/bin
+COMPOSER_HOME=$COMPOSER_DIR turnkey-composer global require joomlatools/console
+ln -s $COMPOSER_BIN/joomla /usr/local/bin/joomla
+
+# I originally intended to use joomla-console to install, but (for now at
+# least) it's easier to just do a manual install.
+
+# create database
+service mysql start
+mysqladmin create $DB_NAME
+mysql --batch --execute "grant all privileges on $DB_NAME.* to $DB_USER@localhost identified by '$DB_PASS'; flush privileges;"
+
+mkdir -p /var/www/.joomlatools
+mkdir -p /var/www/.npm
+chown www-data:www-data /var/www/.joomlatools /var/www/.npm
+
+npm install -g npm
+
+runuser www-data -s /bin/bash -c 'joomla site:create joomla --release=4.1 --www /var/www --disable-ssl -L '"$DB_USER:$DB_PASS"' --skip-create-statement'
+
+# update apache configuration
+a2dissite 000-default
+a2ensite joomla
+a2enmod rewrite
+
+## enable clean urls
+. /usr/lib/inithooks/firstboot.d/20regen-joomla-secrets
+mv $WEBROOT/htaccess.txt $WEBROOT/.htaccess
+sed -i "s|^# RewriteBase /|RewriteBase /|" $WEBROOT/.htaccess
+sed -i '/public $debug =/s/= 1/= 0/' /var/www/joomla/configuration.php
+chown www-data:www-data /var/www/joomla/configuration.php
+find $WEBROOT -type f -iname '*.php' -exec chmod 600 {} +
+find $WEBROOT -type f -iname '*.(html?|png|jpe?g|bmp|tga|gif)' -exec chmod 644 {} +
+
+MYSQL_BATCH="mysql --batch --database=$DB_NAME --execute"
+
+$MYSQL_BATCH "INSERT INTO ${DB_PREFIX}content VALUES (1 , 54, 'Welcome to TurnKey Joomla', 'welcome-to-turnkey-joomla','<h2>Getting started</h2>\r\n<p> </p>\r\n<ul>\r\n<li>Log into the <a href=\"administrator\">administration console</a> as <strong>admin</strong></li>\r\n<li>Refer to the <a href=\"https://www.turnkeylinux.org/joomla3\">TurnKey Joomla release notes</a></li>\r\n<li>Refer to the <a href=\"http://docs.joomla.org\">Joomla documentation</a></li>\r\n</ul>\r\n<p> </p>','',1,2,'2015-06-01 00:00:00',42,'','2015-07-03 07:40:46',2,0,'0000-00-00 00:00:00','2015-06-01 00:00:00','0000-00-00 00:00:00','','','{\"show_title\":\"\",\"link_titles\":\"\",\"show_intro\":\"\",\"show_category\":\"\",\"link_category\":\"\",\"show_parent_category\":\"\",\"link_parent_category\":\"\",\"show_author\":\"\",\"link_author\":\"\",\"show_create_date\":\"\",\"show_modify_date\":\"\",\"show_publish_date\":\"\",\"show_item_navigation\":\"\",\"show_icons\":\"\",\"show_print_icon\":\"\",\"show_email_icon\":\"\",\"show_vote\":\"\",\"show_hits\":\"\",\"show_noauth\":\"\",\"alternative_readmore\":\"\",\"article_layout\":\"\"}',2,1,'','',1,0,'',1,'*', '');"
+
+$MYSQL_BATCH "INSERT INTO ${DB_PREFIX}assets (\`parent_id\`, \`lft\`, \`rgt\`, \`level\`, \`name\`, \`title\`, \`rules\`) VALUES ('27', '19', '20', '3', 'com_content.article.1', 'Welcome to TurnKey Joomla', '{\"core.delete\":[],\"core.edit\":[],\"core.edit.state\":[]}');"
+
+service mysql stop
+service apache2 stop
+
+rm -f /usr/local/src/Joomla*
+rm /usr/local/bin/sudo
