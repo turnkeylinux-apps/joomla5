@@ -1,4 +1,4 @@
-COMMON_CONF = apache-credit nodejs-install
+COMMON_CONF = apache-credit nodejs
 
 CREDIT_LOCATION = ~ "^/(?!(administrator|media/editors))"
 define CREDIT_STYLE_EXTRA
