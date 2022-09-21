@@ -23,9 +23,6 @@ chown -R $USER:$USER $WEBROOT $COMPOSER_DIR
 COMPOSER_HOME=$COMPOSER_DIR turnkey-composer global require joomlatools/console
 ln -s $COMPOSER_BIN/joomla /usr/local/bin/joomla
 
-# I originally intended to use joomla-console to install, but (for now at
-# least) it's easier to just do a manual install.
-
 # create database
 service mysql start
 mysqladmin create $DB_NAME
@@ -37,7 +34,7 @@ chown www-data:www-data /var/www/.joomlatools /var/www/.npm
 
 npm install -g npm
 
-runuser www-data -s /bin/bash -c 'joomla site:create joomla --release=4.1 --www /var/www --disable-ssl -L '"$DB_USER:$DB_PASS"' --skip-create-statement'
+runuser www-data -s /bin/bash -c 'joomla site:create joomla --release=4.2 --www /var/www -L '"$DB_USER:$DB_PASS"' --skip-create-statement'
 
 # update apache configuration
 a2dissite 000-default
