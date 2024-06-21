@@ -34,7 +34,7 @@ chown www-data:www-data /var/www/.joomlatools /var/www/.npm
 
 npm install -g npm
 
-runuser www-data -s /bin/bash -c 'joomla site:create joomla --release=4.3 --www /var/www -L '"$DB_USER:$DB_PASS"' --skip-create-statement'
+runuser www-data -s /bin/bash -c 'joomla site:create joomla --release=5.1 --www /var/www -L '"$DB_USER:$DB_PASS"' --skip-create-statement'
 
 # update apache configuration
 a2dissite 000-default
